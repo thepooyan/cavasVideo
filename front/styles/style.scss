@@ -1,0 +1,12 @@
+body {
+    direction: rtl;
+}
+
+* {
+    box-sizing: border-box;
+
+}
+video {
+    max-width: 100%;
+}
+@import 'canvasPlayer'

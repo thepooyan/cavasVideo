@@ -1,0 +1,2 @@
+- full screen canvas object fit
+- fix progress bar jump

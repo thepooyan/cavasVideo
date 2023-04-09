@@ -72,10 +72,10 @@ class CanvasVideo {
     this.controlBar.appendChild(this.progressBar);
 
     //create buttons
-    this.fullscButton = this.createButton('', this.toggleFullscreen, { className: "fullsc", altIcon: '' });
-    this.createButton('', () => { this.jumpVideo({ amount: 15 }) });
-    this.playButton = this.createButton('', this.toggleVideoPlay, { altIcon: '' });
-    this.createButton('', () => { this.jumpVideo({ amount: -15 }) });
+    this.fullscButton = this.#createButton('', this.toggleFullscreen, { className: "fullsc", altIcon: '' });
+    this.#createButton('', () => { this.jumpVideo({ amount: 15 }) });
+    this.playButton = this.#createButton('', this.toggleVideoPlay, { altIcon: '' });
+    this.#createButton('', () => { this.jumpVideo({ amount: -15 }) });
 
 
     this.canvasClone.onclick = () => { this.toggleVideoPlay(this.playButton) };
@@ -83,7 +83,7 @@ class CanvasVideo {
     this.canvas.replaceWith(this.container);
   }
   //inner methods
-  paintCanvas = () => {
+  #paintCanvas = () => {
     let context = this.canvasClone.getContext('2d');
     context.drawImage(this.video, 0, 0, this.canvasClone.width, this.canvasClone.height);
 
@@ -96,9 +96,9 @@ class CanvasVideo {
     }
 
     if (this.animationAuthorization)
-      requestAnimationFrame(this.paintCanvas);
+      requestAnimationFrame(this.#paintCanvas);
   }
-  createButton = (icon, onclick, { className, altIcon } = {}) => {
+  #createButton = (icon, onclick, { className, altIcon } = {}) => {
     let button = document.createElement('button');
     button.dataset.icon = icon;
     if (className)
@@ -121,7 +121,7 @@ class CanvasVideo {
     } else {
       this.video.play();
       this.animationAuthorization = true;
-      this.paintCanvas();
+      this.#paintCanvas();
     }
   }
   toggleFullscreen = () => {
@@ -160,7 +160,7 @@ class CanvasVideo {
     else if (timestamp)
       this.video.currentTime = timestamp;
     if (this.video.paused) {
-      this.paintCanvas(); //refresh the picutre on the frame
+      this.#paintCanvas(); //refresh the picutre on the frame
     }
   }
 }

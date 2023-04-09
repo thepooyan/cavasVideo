@@ -2,56 +2,100 @@ import { dc } from "eixes";
 import TimeCapsule from "./TimeCapsule";
 import $ from 'jquery';
 
-function newCanvasVideo(id) {
-  $.ajax({
-    url: 'http://192.168.1.109:3000/test',
-    method: 'POST',
-    data: JSON.stringify({ hash: id }),
-    contentType: 'application/json',
-    success: src => {
-      video.src = src;
+class CanvasVideo {
+  animationAuthorization = true;
+  wholeTime;
+  spentTime = new TimeCapsule(0);
+
+  constructor(id) {
+    this.id = id;
+    this.canvas = dc.id(id);
+    this.canvasClone = this.canvas.cloneNode();
+
+    this.video = document.createElement('video');
+    this.video.style.display = "none";
+    document.body.appendChild(this.video);
+    $.ajax({
+      url: 'http://192.168.1.109:3000/test',
+      method: 'POST',
+      data: JSON.stringify({ hash: id }),
+      contentType: 'application/json',
+      success: src => {
+        this.video.src = src;
+      }
+    })
+    let checkVideoReady = setInterval(() => {
+      if (this.video.readyState > 0) {
+        this.wholeTime = new TimeCapsule(this.video.duration);
+        this.controlBar.dataset.wholetime = this.wholeTime.getByMinute();
+        this.controlBar.dataset.spenttime = this.spentTime.getByMinute();
+
+        this.canvasClone.width = this.video.videoWidth;
+        this.canvasClone.height = this.video.videoHeight;
+
+        clearInterval(checkVideoReady)
+      }
+    }, 200);
+
+    //create elements
+    this.container = document.createElement('div');
+    this.container.classList.add('canvasPlayer');
+    this.container.appendChild(this.canvasClone);
+    let hoverTimeout;
+    this.container.onmousemove = () => {
+      clearInterval(hoverTimeout);
+      this.container.classList.add('hover');
+
+      hoverTimeout = setTimeout(() => {
+        this.container.classList.remove('hover');
+      }, 3000);
     }
-  })
-  const canvas = dc.id(id);
-  let canvasClone = canvas.cloneNode();
-
-  let video = document.createElement('video');
-  video.style.display = "none";
-  document.body.appendChild(video);
-
-  let animationAuthorization = true;
-  let wholeTime;
-  let spentTime = new TimeCapsule(0);
-
-  let getInterval = setInterval(() => {
-    if (video.readyState > 0) {
-      wholeTime = new TimeCapsule(video.duration);
-      controlBar.dataset.wholetime = wholeTime.getByMinute();
-      controlBar.dataset.spenttime = spentTime.getByMinute();
-
-      canvasClone.width = video.videoWidth;
-      canvasClone.height = video.videoHeight;
-
-      clearInterval(getInterval)
-    }
-  }, 200);
-
-  //inner functions
-  const paintCanvas = (video, canvas) => {
-    let context = canvas.getContext('2d');
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    if (Math.floor(video.currentTime) !== spentTime.time) {
-      spentTime.set(Math.floor(video.currentTime));
-      controlBar.dataset.spenttime = spentTime.getByMinute();
-      let progress = (spentTime.time / wholeTime.time) * 100;
-      progressBar.style.setProperty('--progress', progress);
+    this.container.onmouseout = () => {
+      this.container.classList.remove('hover');
     }
 
-    if (animationAuthorization)
-      requestAnimationFrame(() => { paintCanvas(video, canvas) });
+
+    this.controlBar = document.createElement('div');
+    this.controlBar.classList.add('controlBar');
+    this.container.appendChild(this.controlBar);
+
+    this.progressBar = document.createElement('div');
+    this.progressBar.classList.add('progressBar');
+    this.progressBar.onclick = e => {
+      let progress = (e.layerX / this.progressBar.clientWidth) * 100;
+      this.jumpVideo({ timestamp: (progress * this.wholeTime.time) / 100 });
+      this.progressBar.style.setProperty('--progress', progress);
+    }
+    this.controlBar.appendChild(this.progressBar);
+
+    this.fullscButton = CanvasVideo.createButton('', this.toggleFullscreen, { className: "fullsc", altIcon: '' }, this.controlBar);
+    CanvasVideo.createButton('', () => { this.jumpVideo({ amount: 15 }) }, undefined, this.controlBar);
+    this.playButton = CanvasVideo.createButton('', this.toggleVideoPlay, { altIcon: '' }, this.controlBar);
+    CanvasVideo.createButton('', () => { this.jumpVideo({ amount: -15 }) }, undefined, this.controlBar);
+
+    this.container.ondblclick = this.toggleFullscreen;
+
+    this.canvasClone.onclick = () => { this.toggleVideoPlay(this.playButton) };
+
+    this.canvas.replaceWith(this.container);
   }
-  const createButton = (icon, onclick, { className, altIcon } = {}) => {
+  //inner functions
+  paintCanvas = () => {
+    let context = this.canvasClone.getContext('2d');
+    context.drawImage(this.video, 0, 0, this.canvasClone.width, this.canvasClone.height);
+
+    // change the timestamp
+    if (Math.floor(this.video.currentTime) !== this.spentTime.time) {
+      this.spentTime.set(Math.floor(this.video.currentTime));
+      this.controlBar.dataset.spenttime = this.spentTime.getByMinute();
+      let progress = (this.spentTime.time / this.wholeTime.time) * 100;
+      this.progressBar.style.setProperty('--progress', progress);
+    }
+
+    if (this.animationAuthorization)
+      requestAnimationFrame(() => { this.paintCanvas(this.video, this.canvasClone) });
+  }
+  static createButton = (icon, onclick, { className, altIcon } = {}, controlBar) => {
     let button = document.createElement('button');
     button.dataset.icon = icon;
     if (className)
@@ -66,18 +110,18 @@ function newCanvasVideo(id) {
   }
 
   //control functions
-  const toggleVideoPlay = (playButton) => {
-    let isVideoPlaying = playButton.classList.toggle('active');
+  toggleVideoPlay = () => {
+    let isVideoPlaying = this.playButton.classList.toggle('active');
     if (!isVideoPlaying) {
-      video.pause();
-      animationAuthorization = false;
+      this.video.pause();
+      this.animationAuthorization = false;
     } else {
-      video.play();
-      animationAuthorization = true;
-      paintCanvas(video, canvasClone)
+      this.video.play();
+      this.animationAuthorization = true;
+      this.paintCanvas();
     }
   }
-  const openFullscreen = () => {
+  openFullscreen = () => {
     let dc = document.documentElement;
     if (dc.requestFullscreen) {
       dc.requestFullscreen();
@@ -87,7 +131,7 @@ function newCanvasVideo(id) {
       dc.msRequestFullscreen();
     }
   }
-  const closeFullscreen = () => {
+  closeFullscreen = () => {
     if (document.exitFullscreen) {
       document.exitFullscreen();
     } else if (document.webkitExitFullscreen) { /* Safari */
@@ -96,73 +140,28 @@ function newCanvasVideo(id) {
       document.msExitFullscreen();
     }
   }
-  const toggleFullscreen = (fullScButton) => {
-    let isFull = fullScButton.classList.toggle('active');
-    container.classList.toggle('fullscreen');
+  toggleFullscreen = () => {
+    let isFull = this.fullscButton.classList.toggle('active');
+    this.container.classList.toggle('fullscreen');
 
     if (isFull) {
-      openFullscreen();
+      this.openFullscreen();
     } else {
-      closeFullscreen();
+      this.closeFullscreen();
     }
   }
-  const jumpVideo = ({ amount, timestamp }) => {
+  jumpVideo = ({ amount, timestamp }) => {
     if (amount)
-      video.currentTime += amount;
+      this.video.currentTime += amount;
     else if (timestamp)
-      video.currentTime = timestamp;
-    if (video.paused) {
-      toggleVideoPlay(playButton);
-      toggleVideoPlay(playButton);
+      this.video.currentTime = timestamp;
+    if (this.video.paused) {
+      this.toggleVideoPlay(this.playButton);
+      this.toggleVideoPlay(this.playButton);
     }
   }
-
-  //create elements
-  let container = document.createElement('div');
-  container.classList.add('canvasPlayer');
-  container.appendChild(canvasClone);
-  let hoverTimeout;
-  container.onmousemove = () => {
-    clearInterval(hoverTimeout);
-    container.classList.add('hover');
-
-    hoverTimeout = setTimeout(() => {
-      container.classList.remove('hover');
-    }, 3000);
-  }
-  container.onmouseout = () => {
-    container.classList.remove('hover');
-  }
-
-
-  let controlBar = document.createElement('div');
-  controlBar.classList.add('controlBar');
-  container.appendChild(controlBar);
-
-  let progressBar = document.createElement('div');
-  progressBar.classList.add('progressBar');
-  progressBar.onclick = e => {
-    let progress = (e.layerX / progressBar.clientWidth) * 100;
-    jumpVideo({ timestamp: (progress * wholeTime.time) / 100 });
-    progressBar.style.setProperty('--progress', progress);
-  }
-  controlBar.appendChild(progressBar);
-
-  let fullscButton = createButton('', toggleFullscreen, { className: "fullsc", altIcon: '' });
-  createButton('', () => { jumpVideo({ amount: 15 }) });
-  let playButton = createButton('', toggleVideoPlay, { altIcon: '' });
-  createButton('', () => { jumpVideo({ amount: -15 }) });
-
-  container.ondblclick = () => {
-    toggleFullscreen(fullscButton)
-  }
-
-  canvasClone.onclick = () => { toggleVideoPlay(playButton) };
-
-  canvas.replaceWith(container);
-  return { toggleVideoPlay, jumpVideo, toggleFullscreen }
 }
 
-dc.queries('canvas.video').forEach(canvas=>{
-  newCanvasVideo(canvas.id);
+dc.queries('canvas.video').forEach(canvas => {
+  let video = new CanvasVideo(canvas.id);
 })

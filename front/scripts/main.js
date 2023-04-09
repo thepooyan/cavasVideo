@@ -4,7 +4,6 @@ import $ from 'jquery';
 
 class CanvasVideo {
   animationAuthorization = true;
-  wholeTime;
   spentTime = new TimeCapsule(0);
 
   constructor(id) {
@@ -15,6 +14,7 @@ class CanvasVideo {
     this.video = document.createElement('video');
     this.video.style.display = "none";
     document.body.appendChild(this.video);
+
     $.ajax({
       url: 'http://192.168.1.109:3000/test',
       method: 'POST',
@@ -37,10 +37,11 @@ class CanvasVideo {
       }
     }, 200);
 
-    //create elements
+    //create container
     this.container = document.createElement('div');
     this.container.classList.add('canvasPlayer');
     this.container.appendChild(this.canvasClone);
+
     let hoverTimeout;
     this.container.onmousemove = () => {
       clearInterval(hoverTimeout);
@@ -54,11 +55,12 @@ class CanvasVideo {
       this.container.classList.remove('hover');
     }
 
-
+    //create control bar
     this.controlBar = document.createElement('div');
     this.controlBar.classList.add('controlBar');
     this.container.appendChild(this.controlBar);
 
+    //create progress bar
     this.progressBar = document.createElement('div');
     this.progressBar.classList.add('progressBar');
     this.progressBar.onclick = e => {
@@ -68,6 +70,7 @@ class CanvasVideo {
     }
     this.controlBar.appendChild(this.progressBar);
 
+    //create buttons
     this.fullscButton = CanvasVideo.createButton('', this.toggleFullscreen, { className: "fullsc", altIcon: '' }, this.controlBar);
     CanvasVideo.createButton('', () => { this.jumpVideo({ amount: 15 }) }, undefined, this.controlBar);
     this.playButton = CanvasVideo.createButton('', this.toggleVideoPlay, { altIcon: '' }, this.controlBar);

@@ -71,10 +71,10 @@ class CanvasVideo {
     this.controlBar.appendChild(this.progressBar);
 
     //create buttons
-    this.fullscButton = CanvasVideo.createButton('', this.toggleFullscreen, { className: "fullsc", altIcon: '' }, this.controlBar);
-    CanvasVideo.createButton('', () => { this.jumpVideo({ amount: 15 }) }, undefined, this.controlBar);
-    this.playButton = CanvasVideo.createButton('', this.toggleVideoPlay, { altIcon: '' }, this.controlBar);
-    CanvasVideo.createButton('', () => { this.jumpVideo({ amount: -15 }) }, undefined, this.controlBar);
+    this.fullscButton = this.createButton('', this.toggleFullscreen, { className: "fullsc", altIcon: '' });
+    this.createButton('', () => { this.jumpVideo({ amount: 15 }) });
+    this.playButton = this.createButton('', this.toggleVideoPlay, { altIcon: '' });
+    this.createButton('', () => { this.jumpVideo({ amount: -15 }) });
 
     this.container.ondblclick = this.toggleFullscreen;
 
@@ -98,7 +98,7 @@ class CanvasVideo {
     if (this.animationAuthorization)
       requestAnimationFrame(() => { this.paintCanvas(this.video, this.canvasClone) });
   }
-  static createButton = (icon, onclick, { className, altIcon } = {}, controlBar) => {
+  createButton = (icon, onclick, { className, altIcon } = {}) => {
     let button = document.createElement('button');
     button.dataset.icon = icon;
     if (className)
@@ -108,7 +108,7 @@ class CanvasVideo {
 
     button.onclick = () => { onclick(button) };
 
-    controlBar.appendChild(button);
+    this.controlBar.appendChild(button);
     return button
   }
 

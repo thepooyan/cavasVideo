@@ -7,6 +7,7 @@ class CanvasVideo {
   spentTime = new TimeCapsule(0);
 
   constructor(id) {
+    window.me = this;//for test
     this.id = id;
     this.canvas = dc.id(id);
     this.canvasClone = this.canvas.cloneNode();
@@ -162,6 +163,15 @@ class CanvasVideo {
     if (this.video.paused) {
       this.#paintCanvas(); //refresh the picutre on the frame
     }
+  }
+  changeVolume = (amount1_100) => {
+    this.video.volume = amount1_100/100;
+  }
+  toggleMute = () => {
+    this.video.muted = !this.video.muted;
+  }
+  changeSpeed(amount) {
+    this.video.playbackRate = amount;
   }
 }
 

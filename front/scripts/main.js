@@ -54,6 +54,7 @@ class CanvasVideo {
     this.container.onmouseout = () => {
       this.container.classList.remove('hover');
     }
+    this.container.ondblclick = this.toggleFullscreen;
 
     //create control bar
     this.controlBar = document.createElement('div');
@@ -76,13 +77,12 @@ class CanvasVideo {
     this.playButton = this.createButton('', this.toggleVideoPlay, { altIcon: '' });
     this.createButton('', () => { this.jumpVideo({ amount: -15 }) });
 
-    this.container.ondblclick = this.toggleFullscreen;
 
     this.canvasClone.onclick = () => { this.toggleVideoPlay(this.playButton) };
 
     this.canvas.replaceWith(this.container);
   }
-  //inner functions
+  //inner methods
   paintCanvas = () => {
     let context = this.canvasClone.getContext('2d');
     context.drawImage(this.video, 0, 0, this.canvasClone.width, this.canvasClone.height);
@@ -96,7 +96,7 @@ class CanvasVideo {
     }
 
     if (this.animationAuthorization)
-      requestAnimationFrame(() => { this.paintCanvas(this.video, this.canvasClone) });
+      requestAnimationFrame(this.paintCanvas);
   }
   createButton = (icon, onclick, { className, altIcon } = {}) => {
     let button = document.createElement('button');
@@ -112,7 +112,7 @@ class CanvasVideo {
     return button
   }
 
-  //control functions
+  //control methods
   toggleVideoPlay = () => {
     let isVideoPlaying = this.playButton.classList.toggle('active');
     if (!isVideoPlaying) {
@@ -124,33 +124,34 @@ class CanvasVideo {
       this.paintCanvas();
     }
   }
-  openFullscreen = () => {
-    let dc = document.documentElement;
-    if (dc.requestFullscreen) {
-      dc.requestFullscreen();
-    } else if (dc.webkitRequestFullscreen) { /* Safari */
-      dc.webkitRequestFullscreen();
-    } else if (dc.msRequestFullscreen) { /* IE11 */
-      dc.msRequestFullscreen();
-    }
-  }
-  closeFullscreen = () => {
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
-    } else if (document.webkitExitFullscreen) { /* Safari */
-      document.webkitExitFullscreen();
-    } else if (document.msExitFullscreen) { /* IE11 */
-      document.msExitFullscreen();
-    }
-  }
   toggleFullscreen = () => {
+    const openFullscreen = () => {
+      let dc = document.documentElement;
+      if (dc.requestFullscreen) {
+        dc.requestFullscreen();
+      } else if (dc.webkitRequestFullscreen) { /* Safari */
+        dc.webkitRequestFullscreen();
+      } else if (dc.msRequestFullscreen) { /* IE11 */
+        dc.msRequestFullscreen();
+      }
+    }
+    const closeFullscreen = () => {
+      let dc = document;
+      if (dc.exitFullscreen) {
+        dc.exitFullscreen();
+      } else if (dc.webkitExitFullscreen) { /* Safari */
+        dc.webkitExitFullscreen();
+      } else if (dc.msExitFullscreen) { /* IE11 */
+        dc.msExitFullscreen();
+      }
+    }
     let isFull = this.fullscButton.classList.toggle('active');
     this.container.classList.toggle('fullscreen');
 
     if (isFull) {
-      this.openFullscreen();
+      openFullscreen();
     } else {
-      this.closeFullscreen();
+      closeFullscreen();
     }
   }
   jumpVideo = ({ amount, timestamp }) => {
@@ -159,8 +160,7 @@ class CanvasVideo {
     else if (timestamp)
       this.video.currentTime = timestamp;
     if (this.video.paused) {
-      this.toggleVideoPlay(this.playButton);
-      this.toggleVideoPlay(this.playButton);
+      this.paintCanvas(); //refresh the picutre on the frame
     }
   }
 }
